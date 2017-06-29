@@ -1,0 +1,74 @@
+buildscript {
+  ext {
+    kotlin_version = '1.1.1'
+    vertx_version = '3.4.1'
+    kmongo_version = '3.3.5'
+  }
+
+  repositories {
+    jcenter()
+  }
+
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+  }
+}
+
+plugins {
+  id 'java'
+  id 'application'
+  id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
+apply plugin: 'kotlin'
+
+sourceCompatibility = '1.8'
+
+mainClassName = 'io.vertx.core.Launcher'
+def mainVerticleName = 'com.slickqa.slicker.SlickerVerticle'
+
+repositories {
+  jcenter()
+}
+dependencies {
+  compile "io.vertx:vertx-core:$vertx_version"
+  compile "io.vertx:vertx-web:$vertx_version"
+  compile "io.vertx:vertx-auth-jwt:$vertx_version"
+
+  compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  compile "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
+  compile "org.litote.kmongo:kmongo-async:$kmongo_version"
+}
+
+// Redeploy watcher.
+run {
+  args = ["run", mainVerticleName, 
+          "-Dvertx.disableDnsResolver=true",
+          "-conf", "dev-env/config.json",
+          "--launcher-class=$mainClassName",
+          "--redeploy=src/**/*.*",
+          "--on-redeploy=./gradlew classes"
+  ]
+}
+
+// Naming and packaging settings for the "shadow jar".
+shadowJar {
+  baseName = 'app'
+  classifier = 'shadow'
+
+  manifest {
+    attributes 'Main-Verticle': mainVerticleName
+  }
+  mergeServiceFiles {
+    include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
+  }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '3.5'
+}
+
+// Heroku relies on the 'stage' task to deploy.
+task stage {
+  dependsOn shadowJar
+}

@@ -1,0 +1,6 @@
+{
+  "authentication": true,
+  "base-url": "http://localhost:8888/",
+  "keycloak-url": "http://localhost:8080/auth",
+  "keycloak-realm": "slick"
+}
